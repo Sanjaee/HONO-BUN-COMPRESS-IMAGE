@@ -3,12 +3,7 @@
     "builds": [
         {
             "src": "index.ts",
-            "use": "@vercel/node",
-            "config": {
-                "regions": [
-                    "sin1"
-                ]
-            }
+            "use": "@vercel/node"
         }
     ],
     "routes": [
