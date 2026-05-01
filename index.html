@@ -1,0 +1,117 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Super Fast Drag & Drop Upload</title>
+  <link rel="stylesheet" href="/style.css">
+</head>
+<body>
+  <div class="container">
+    <h1>Super Fast Upload</h1>
+    <p class="desc">Auto Kompres & Konversi WebP via Bun + Sharp</p>
+
+    <div class="drop-zone" id="drop-zone">
+      <div class="drop-zone-icon">🚀</div>
+      <div class="drop-zone-text">Drag & Drop gambar ke sini</div>
+      <div class="drop-zone-subtext">atau klik untuk memilih file (JPG, PNG)</div>
+      <input type="file" id="file-input" accept="image/*">
+    </div>
+
+    <div class="loading" id="loading">
+      <div class="spinner"></div>
+      <div>Memproses & Mengunggah ke Cloudinary...</div>
+    </div>
+
+    <div class="error" id="error"></div>
+
+    <div id="preview-container">
+      <img id="preview-img" alt="Preview">
+      <div>
+        <a id="result-link" href="#" target="_blank">Lihat Hasil Cloudinary</a>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const dropZone = document.getElementById('drop-zone');
+    const fileInput = document.getElementById('file-input');
+    const loading = document.getElementById('loading');
+    const errorMsg = document.getElementById('error');
+    const previewContainer = document.getElementById('preview-container');
+    const previewImg = document.getElementById('preview-img');
+    const resultLink = document.getElementById('result-link');
+
+    ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(eventName => {
+      dropZone.addEventListener(eventName, preventDefaults, false);
+    });
+
+    function preventDefaults(e) {
+      e.preventDefault();
+      e.stopPropagation();
+    }
+
+    ['dragenter', 'dragover'].forEach(eventName => {
+      dropZone.addEventListener(eventName, () => dropZone.classList.add('dragover'), false);
+    });
+
+    ['dragleave', 'drop'].forEach(eventName => {
+      dropZone.addEventListener(eventName, () => dropZone.classList.remove('dragover'), false);
+    });
+
+    dropZone.addEventListener('drop', (e) => {
+      const dt = e.dataTransfer;
+      const files = dt.files;
+      if (files && files.length > 0) {
+        handleFile(files[0]);
+      }
+    });
+
+    fileInput.addEventListener('change', function() {
+      if (this.files && this.files.length > 0) {
+        handleFile(this.files[0]);
+      }
+    });
+
+    async function handleFile(file) {
+      if (!file.type.startsWith('image/')) {
+        showError('Hanya file gambar yang diperbolehkan.');
+        return;
+      }
+
+      errorMsg.style.display = 'none';
+      previewContainer.style.display = 'none';
+      loading.style.display = 'block';
+
+      const formData = new FormData();
+      formData.append('image', file);
+
+      try {
+        const response = await fetch('/api/upload', {
+          method: 'POST',
+          body: formData
+        });
+
+        const data = await response.json();
+
+        if (response.ok) {
+          loading.style.display = 'none';
+          previewImg.src = data.url;
+          resultLink.href = data.url;
+          previewContainer.style.display = 'block';
+        } else {
+          throw new Error(data.error || 'Terjadi kesalahan saat mengunggah.');
+        }
+      } catch (err) {
+        loading.style.display = 'none';
+        showError(err.message);
+      }
+    }
+
+    function showError(msg) {
+      errorMsg.textContent = msg;
+      errorMsg.style.display = 'block';
+    }
+  </script>
+</body>
+</html>
